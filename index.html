@@ -199,11 +199,11 @@
                     stationDiv.style.width = stationWidth;
                     stationDiv.innerHTML = `
                         <h3>${station.sna || '未知'}</h3>
-                        <p>地區: ${station.sarea || '未知'}</p>
-                        <p>地址: ${station.ar || '未知'}</p>
-                        <p>YouBike 2.0: ${station.sbi_detail?.yb2 || '未知'}</p>
-                        <p>YouBike 2.0E: ${station.sbi_detail?.eyb || '未知'}</p>
-                        <p>可停空位數: ${station.bemp || '未知'}</p>
+                        <p>地區： ${station.sarea || '未知'}</p>
+                        <p>地址:：${station.ar || '未知'}</p>
+                        <p>YouBike 2.0： ${station.sbi_detail?.yb2 || '未知'}</p>
+                        <p>YouBike 2.0E： ${station.sbi_detail?.eyb || '未知'}</p>
+                        <p>可停空位數： ${station.bemp || '未知'}</p>
                     `;
                     resultsDiv.appendChild(stationDiv);
                 });
