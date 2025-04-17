@@ -18,7 +18,7 @@
 **技術**
 
 * **前端:** HTML, CSS, JavaScript (Fetch API)
-* **資料來源:** 高雄市政府資料開放平台 YouBike 2.0 即時資訊 API
+* **資料來源:** [高雄市政府資料開放平台 YouBike 2.0 即時資訊 API](https://api.kcg.gov.tw/api/service/Get/b4dd9c40-9027-4125-8666-06bef1756092)
 
 **功能**
 
@@ -43,11 +43,6 @@
 **貢獻**
 
 歡迎對本專案感興趣的開發者一起參與貢獻！您可以透過 GitHub 提交 Pull Request 來改善程式碼、新增功能或修復錯誤。
-
-
-**版權**
-
-本專案以 MIT 授權條款釋出。
 
 ---
 
