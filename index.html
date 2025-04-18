@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouBike 站點查詢</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Light Mode (Default) */
+        body {
+            font-family: 'Noto Sans TC', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            position: relative; /* Needed for absolute positioning of toggle */
+        }
+        h1 {
+            color: #007BFF;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Mode Toggle Button - Universal Style (Circular Icon) */
+        #modeToggle {
+            position: fixed; /* Fixed position for both desktop and mobile */
+            bottom: 20px; /* Position from bottom */
+            right: 20px; /* Position from right */
+            width: 50px; /* Fixed width for circle */
+            height: 50px; /* Fixed height for circle */
+            border-radius: 50%; /* Make it circular */
+            padding: 0; /* Remove padding */
+            background-color: #007BFF; /* Default light mode color */
+            color: white; /* Color for emoji background */
+            border: none;
+            cursor: pointer;
+            font-size: 24px; /* Larger font size for emoji */
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            z-index: 100; /* Ensure it's on top of everything */
+            display: flex; /* Use flexbox to center emoji */
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Add shadow */
+        }
+        #modeToggle:hover {
+            background-color: #0056b3;
+            transform: scale(1.05); /* Slightly enlarge on hover */
+        }
+
+
+         /* Search and Geolocation Button Container */
+        #inputArea {
+            display: flex;
+            flex-direction: column; /* Stack elements vertically initially */
+            align-items: center;
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 500px;
+            width: 100%;
+            margin-bottom: 10px;
+             position: relative; /* Added for positioning suggestions */
+        }
+
+        #searchContainer {
+            display: flex;
+            align-items: center;
+            width: 100%; /* Take full width of parent */
+            margin-bottom: 10px; /* Space between search bar and geo button */
+            position: relative; /* Needed for positioning suggestions container */
+            z-index: 2; /* Ensure search bar is above suggestions */
+        }
+
+        #keyword {
+            padding: 10px;
+            width: calc(100% - 100px); /* Adjusted width */
+            max-width: 400px; /* Keep max width for desktop */
+            border: 1px solid #ccc;
+            border-radius: 5px 0 0 5px;
+            margin-right: 0;
+            font-size: 16px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            word-wrap: break-word;
+            overflow-wrap: break-wrap;
+            background-color: #fff;
+            color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+         /* Ensure keyword takes full width on mobile */
+         @media (max-width: 768px) {
+             #keyword {
+                 width: 100%;
+                 max-width: none;
+                 border-radius: 5px;
+                 margin-bottom: 10px; /* Add margin below on mobile */
+             }
+         }
+
+        #searchContainer button { /* Targeted the search button */
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin-left: 0;
+            width: auto;
+            min-width: 80px; /* Adjusted min-width */
+            text-align: center;
+        }
+         @media (max-width: 768px) {
+             #searchContainer button {
+                 width: 100%;
+                 border-radius: 5px;
+                 min-width: auto;
+             }
+         }
+
+        /* Geolocation Button */
+        #geoButton {
+            padding: 10px 20px;
+            background-color: #28a745; /* Green color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            width: 100%; /* Take full width of parent */
+            text-align: center;
+        }
+        #geoButton:hover {
+            background-color: #218838;
+        }
+        #geoButton:disabled {
+            background-color: #6c757d; /* Grey color when disabled */
+            cursor: not-allowed;
+        }
+
+        /* Suggestions/History Dropdown */
+        #suggestionsContainer {
+             /* Position relative to #inputArea on desktop */
+             position: absolute;
+             top: calc(100% + 10px); /* Position below #inputArea + its margin */
+             left: 0;
+             right: 0;
+             z-index: 1; /* Below the search bar */
+             background-color: #fff;
+             border: 1px solid #ccc;
+             border-top: none;
+             border-radius: 0 0 5px 5px;
+             max-height: 200px;
+             overflow-y: auto;
+             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+             width: 100%; /* Match width of parent #inputArea */
+             margin-left: auto;
+             margin-right: auto;
+             max-width: 500px;
+             display: none; /* Hide by default */
+             transition: background-color 0.3s ease, border-color 0.3s ease;
+         }
+
+        #suggestionsContainer div {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+            color: #333;
+            transition: background-color 0.2s ease;
+        }
+
+         #suggestionsContainer div:last-child {
+             border-bottom: none;
+         }
+
+        #suggestionsContainer div:hover {
+            background-color: #f0f0f0;
+        }
+
+
+        #results {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center; /* Center the results */
+        }
+        .station {
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            border-radius: 10px;
+            width: calc(33% - 40px); /* Adjusted for gap */
+            min-width: 280px; /* Increased min-width */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            display: flex; /* Use flexbox for internal layout */
+            flex-direction: column;
+             position: relative; /* Added for absolute positioning of the icon */
+             padding-bottom: 40px; /* Added padding to the bottom to make space for the icon */
+        }
+        .station:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        .station h3 {
+            margin: 0 0 10px 0;
+            color: #007BFF;
+            font-size: 1.2em;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            flex-grow: 1; /* Allow title to take available space */
+        }
+        .station p {
+            margin: 0 0 5px 0;
+            color: #555;
+            font-size: 1em;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+         #results > p { /* Style for messages like "找不到資料" */
+             text-align: center;
+             width: 100%;
+             color: #555; /* Default text color */
+         }
+
+        /* Navigation Icon Style */
+        .navigation-icon {
+            position: absolute;
+            bottom: 10px; /* Adjust as needed */
+            right: 10px; /* Adjust as needed */
+            font-size: 24px; /* Adjust icon size as needed */
+            text-decoration: none; /* Remove underline from link */
+            color: #007BFF; /* Icon color, adjust as needed */
+            transition: color 0.3s ease;
+            line-height: 1; /* Ensure icon is vertically centered if it's a character */
+        }
+
+        .navigation-icon:hover {
+            color: #0056b3; /* Hover color */
+        }
+
+
+        /* Dark Mode */
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #eee;
+        }
+        .dark-mode h1 {
+            color: #90CAF9; /* Lighter blue for dark mode */
+        }
+        /* Dark mode style for the mode toggle button */
+        .dark-mode #modeToggle {
+             background-color: #90CAF9; /* Lighter blue */
+             color: #1a1a1a; /* Dark text/emoji */
+             box-shadow: 0 4px 8px rgba(144, 202, 249, 0.3); /* Darker shadow */
+        }
+         .dark-mode #modeToggle:hover {
+             background-color: #64b5f6; /* Even lighter blue on hover */
+         }
+
+        .dark-mode #keyword {
+            background-color: #333;
+            color: #eee;
+            border-color: #555;
+        }
+        .dark-mode #keyword:focus {
+            border-color: #90CAF9;
+            box-shadow: 0 0 5px rgba(144, 202, 249, 0.5);
+        }
+         .dark-mode #searchContainer button {
+             background-color: #90CAF9;
+             color: #1a1a1a;
+         }
+          .dark-mode #searchContainer button:hover {
+              background-color: #64b5f6;
+          }
+          .dark-mode #geoButton {
+              background-color: #81c784; /* Lighter green for dark mode */
+              color: #1a1a1a;
+           }
+           .dark-mode #geoButton:hover {
+              background-color: #66bb6a;
+           }
+           .dark-mode #geoButton:disabled {
+               background-color: #444;
+               color: #888;
+           }
+
+
+        .dark-mode #suggestionsContainer {
+             background-color: #333;
+             border-color: #555;
+             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+         }
+
+         .dark-mode #suggestionsContainer div {
+             color: #eee;
+             border-bottom-color: #444;
+          }
+
+          .dark-mode #suggestionsContainer div:hover {
+              background-color: #444;
+          }
+
+        .dark-mode .station {
+            background-color: #333;
+            border-color: #555;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+         .dark-mode .station:hover {
+             box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+         }
+        .dark-mode .station h3 {
+            color: #90CAF9;
+        }
+        .dark-mode .station p {
+            color: #ccc;
+        }
+        .dark-mode #results > p { /* Style for messages in dark mode */
+            color: #ccc;
+        }
+         /* Dark mode navigation icon style */
+         .dark-mode .navigation-icon {
+             color: #90CAF9;
+         }
+          .dark-mode .navigation-icon:hover {
+              color: #64b5f6;
+          }
+
+
+        /* Mobile Specific Adjustments */
+        @media (max-width: 768px) {
+             #inputArea {
+                 flex-direction: column; /* Stack vertically */
+             }
+             #searchContainer {
+                 flex-direction: column; /* Stack keyword and search button */
+                 margin-bottom: 10px; /* Space below search part */
+             }
+             #keyword {
+                 width: 100%;
+                 margin-right: 0;
+                 margin-bottom: 10px; /* Space below keyword */
+                 border-radius: 5px; /* Rounded corners on all sides */
+                 max-width: none; /* Remove max-width restriction */
+             }
+             #searchContainer button {
+                 width: 100%;
+                 border-radius: 5px; /* Rounded corners on all sides */
+                 min-width: auto;
+             }
+
+            /* Padding for body on mobile to account for fixed button */
+            body {
+                padding-bottom: 80px; /* Add padding to the bottom to prevent content hiding behind the fixed button */
+            }
+
+             #suggestionsContainer {
+                 position: static; /* Remove absolute positioning on smaller screens */
+                 width: 100%;
+                 border-radius: 5px;
+                 margin-top: 0; /* Reduce gap */
+                 box-shadow: none; /* Remove extra shadow */
+                 border-top: 1px solid #ccc; /* Add border back */
+             }
+             .dark-mode #suggestionsContainer {
+                 border-top-color: #555;
+             }
+            #results {
+                gap: 10px;
+            }
+            .station {
+                width: calc(50% - 30px); /* Adjusted for gap */
+                 min-width: 250px;
+                 margin-bottom: 0; /* Removed margin-bottom */
+            }
+             #geoButton {
+                 width: 100%; /* Full width on mobile */
+             }
+        }
+         @media (max-width: 480px) {
+             /* Adjust button position slightly on very small screens */
+             #modeToggle {
+                  bottom: 10px;
+                 right: 10px;
+             }
+             body {
+                 padding-bottom: 70px; /* Adjust padding for smaller button/margin */
+             }
+             .station {
+                 width: calc(100% - 40px); /* Adjusted for padding */
+                  min-width: auto;
+             }
+             #inputArea {
+                  margin-left: 0;
+                  margin-right: 0;
+              }
+              #suggestionsContainer {
+                  margin-left: 0;
+                  margin-right: 0;
+              }
+         }
+    </style>
+</head>
+<body>
+    <button id="modeToggle" onclick="toggleDarkMode()"></button>
+    <h1>YouBike 站點查詢</h1>
+    <div id="inputArea">
+        <div id="searchContainer">
+            <input type="text" id="keyword" placeholder="請輸入站點名稱" value="">
+            <button onclick="searchYouBike()">搜尋</button>
+             <div id="suggestionsContainer"></div>
+        </div>
+        <button id="geoButton" onclick="findNearestStations()">尋找最近站點</button>
+    </div>
+
+    <div id="results"></div>
+    <script>
+        const keywordInput = document.getElementById('keyword');
+        const suggestionsContainer = document.getElementById('suggestionsContainer');
+        const resultsDiv = document.getElementById('results');
+        const modeToggleBtn = document.getElementById('modeToggle'); // Get the mode button element
+        const geoButton = document.getElementById('geoButton'); // Get the geo button element
+        let allStations = []; // Store the full list of stations
+        const historyLimit = 10; // Limit the number of history items
+        const nearestLimit = 20; // Limit the number of nearest stations to display
+
+        // Function to check if the current view is mobile (still useful for other responsive elements)
+        function isMobileView() {
+            return window.innerWidth <= 768;
+        }
+
+        // Function to update the mode toggle button UI (always uses emoji now)
+        function updateModeToggleButtonUI() {
+             const isDarkMode = document.body.classList.contains('dark-mode');
+             // Always use emojis now for both desktop and mobile
+             modeToggleBtn.innerHTML = isDarkMode ? '🌙' : '☀️';
+             // CSS handles the position and shape based on screen size (or universally now)
+        }
+
+        // Function to toggle dark mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDarkMode);
+            updateModeToggleButtonUI(); // Update button UI after toggling mode
+        }
+
+        // Load search history from localStorage
+        function loadHistory() {
+            const historyJson = localStorage.getItem('searchHistory');
+            return historyJson ? JSON.parse(historyJson) : [];
+        }
+
+        // Save search keyword to localStorage history
+        function saveHistory(keyword) {
+            if (!keyword || keyword.trim() === '') return;
+
+            let history = loadHistory();
+            // Remove the keyword if it already exists to avoid duplicates and move to front
+            history = history.filter(item => item.toLowerCase() !== keyword.toLowerCase());
+            // Add the new keyword to the front
+            history.unshift(keyword.trim());
+            // Trim the history to the limit
+            history = history.slice(0, historyLimit);
+
+            localStorage.setItem('searchHistory', JSON.stringify(history));
+        }
+
+        // Display search history in the suggestions container
+        function displayHistory() {
+            const history = loadHistory();
+            suggestionsContainer.innerHTML = ''; // Clear previous content
+            if (history.length === 0) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+
+            history.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.textContent = item;
+                historyItem.addEventListener('click', () => {
+                    keywordInput.value = item;
+                    searchYouBike(); // Trigger search with the history item
+                    hideSuggestions();
+                });
+                suggestionsContainer.appendChild(historyItem);
+            });
+            suggestionsContainer.style.display = 'block';
+             // Adjust suggestions container position based on current view
+             if (!isMobileView()) { // Desktop positioning
+                 suggestionsContainer.style.position = 'absolute';
+                 suggestionsContainer.style.left = keywordInput.offsetLeft + 'px';
+                 suggestionsContainer.style.width = keywordInput.offsetWidth + 'px';
+                 suggestionsContainer.style.top = '100%'; // Position relative to searchContainer
+             } else { // Mobile positioning
+                 suggestionsContainer.style.position = 'static';
+                 suggestionsContainer.style.left = '0';
+                 suggestionsContainer.style.width = '100%';
+                 suggestionsContainer.style.top = 'auto';
+             }
+             suggestionsContainer.style.maxWidth = '500px'; // Ensure max width consistent
+             suggestionsContainer.style.marginLeft = 'auto';
+             suggestionsContainer.style.marginRight = 'auto';
+             suggestionsContainer.style.borderTop = 'none'; // Remove top border on desktop
+             if (isMobileView()) {
+                 suggestionsContainer.style.borderTop = '1px solid #ccc'; // Add back on mobile
+                 if (document.body.classList.contains('dark-mode')) {
+                     suggestionsContainer.style.borderTopColor = '#555';
+                 }
+             }
+        }
+
+        // Display autocomplete suggestions
+        function displaySuggestions(suggestions) {
+            suggestionsContainer.innerHTML = ''; // Clear previous content
+             if (suggestions.length === 0) {
+                 suggestionsContainer.style.display = 'none';
+                 return;
+             }
+
+            suggestions.forEach(station => {
+                 // Use the full station name (sna) for display in suggestions
+                 const stationNameForDisplay = station.sna || '未知站點名稱';
+
+                const suggestionItem = document.createElement('div');
+                suggestionItem.textContent = stationNameForDisplay;
+
+                suggestionItem.addEventListener('click', () => {
+                    // When clicked, set the input value to the full original station name
+                    keywordInput.value = station.sna || '';
+                    searchYouBike(); // Trigger search with the suggested item
+                    hideSuggestions();
+                });
+                suggestionsContainer.appendChild(suggestionItem);
+            });
+            suggestionsContainer.style.display = 'block';
+             // Adjust suggestions container position based on current view
+             if (!isMobileView()) { // Desktop positioning
+                 suggestionsContainer.style.position = 'absolute';
+                 suggestionsContainer.style.left = keywordInput.offsetLeft + 'px';
+                 suggestionsContainer.style.width = keywordInput.offsetWidth + 'px';
+                 suggestionsContainer.style.top = '100%'; // Position relative to searchContainer
+             } else { // Mobile positioning
+                 suggestionsContainer.style.position = 'static';
+                 suggestionsContainer.style.left = '0';
+                 suggestionsContainer.style.width = '100%';
+                 suggestionsContainer.style.top = 'auto';
+             }
+              suggestionsContainer.style.maxWidth = '500px'; // Ensure max width consistent
+             suggestionsContainer.style.marginLeft = 'auto';
+             suggestionsContainer.style.marginRight = 'auto';
+             suggestionsContainer.style.borderTop = 'none'; // Remove top border on desktop
+             if (isMobileView()) {
+                 suggestionsContainer.style.borderTop = '1px solid #ccc'; // Add back on mobile
+                  if (document.body.classList.contains('dark-mode')) {
+                     suggestionsContainer.style.borderTopColor = '#555';
+                 }
+             }
+        }
+
+        // Hide suggestions/history container
+        function hideSuggestions() {
+             // Use a small delay to allow click events on suggestions to register
+             setTimeout(() => {
+                 suggestionsContainer.style.display = 'none';
+                 suggestionsContainer.innerHTML = ''; // Clear content when hidden
+             }, 100); // 100ms delay
+        }
+
+         // Calculate distance between two coordinates using Haversine formula (returns distance in km)
+         function calculateDistance(lat1, lon1, lat2, lon2) {
+             const R = 6371; // Radius of the earth in km
+             const dLat = (lat2 - lat1) * Math.PI / 180;
+             const dLon = (lon2 - lon1) * Math.PI / 180;
+             const a =
+                 Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                 Math.sin(dLon / 2) * Math.sin(dLon / 2);
+             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+             const d = R * c; // Distance in km
+             return d;
+         }
+
+        // Find and display nearest YouBike stations
+        function findNearestStations() {
+             if (!navigator.geolocation) {
+                 resultsDiv.innerHTML = '<p style="text-align: center; width: 100%;">您的瀏覽器不支援地理位置服務。</p>';
+                 return;
+             }
+
+             if (allStations.length === 0) {
+                 resultsDiv.innerHTML = `<p style="text-align: center; width: 100%;">站點資料尚未載入，無法尋找最近站點，請稍後再試。</p>`;
+                 return;
+             }
+
+            // Clear previous results and suggestions
+            resultsDiv.innerHTML = '<p style="text-align: center; width: 100%;">正在獲取您的位置...</p>';
+            hideSuggestions();
+            keywordInput.value = ''; // Clear search input
+
+             // Disable the button while getting location
+             geoButton.disabled = true;
+             geoButton.textContent = '正在定位...';
+
+
+             navigator.geolocation.getCurrentPosition(
+                 (position) => {
+                     const userLat = position.coords.latitude;
+                     const userLon = position.coords.longitude;
+
+                     // Calculate distance for each station and sort
+                     const stationsWithDistance = allStations
+                          .map(station => {
+                              // Ensure lat/lng exist and are numbers
+                              const stationLat = parseFloat(station.lat);
+                              const stationLon = parseFloat(station.lng);
+
+                              if (isNaN(stationLat) || isNaN(stationLon)) {
+                                  return null; // Skip stations with invalid coordinates
+                              }
+
+                              const distance = calculateDistance(userLat, userLon, stationLat, stationLon);
+                              return { ...station, distance: distance };
+                          })
+                          .filter(station => station !== null) // Remove stations with invalid coordinates
+                          .sort((a, b) => a.distance - b.distance); // Sort by distance
+
+
+                     resultsDiv.innerHTML = ""; // Clear loading message
+
+                     if (stationsWithDistance.length === 0) {
+                         resultsDiv.innerHTML = `<p style="text-align: center; width: 100%;">找不到附近站點。</p>`;
+                     } else {
+                         // Display the nearest stations
+                         const nearestStations = stationsWithDistance.slice(0, nearestLimit);
+                         nearestStations.forEach(station => {
+                             const stationDiv = document.createElement('div');
+                             stationDiv.className = 'station';
+
+                             const stationNameDisplay = station.sna ? station.sna.replace(/^YouBike2\.0_/, '').replace(/^YouBike1\.0_/, '') : '未知站點名稱';
+                             const stationArea = station.sarea || '未知區域';
+                             const stationAddress = station.ar || '未知地址';
+                             const youbike2 = station.sbi_detail?.yb2 !== undefined ? station.sbi_detail.yb2 : '未知';
+                             const youbike2e = station.sbi_detail?.eyb !== undefined ? station.sbi_detail.eyb : '未知';
+                             const availableSpaces = station.bemp !== undefined ? station.bemp : '未知';
+                              const distanceKm = station.distance.toFixed(2); // Distance in km, 2 decimal places
+                              const distanceText = station.distance < 1 ? `${(station.distance * 1000).toFixed(0)} 公尺` : `${distanceKm} 公里`; // Display in meters if < 1km
+
+                             // Modified innerHTML to include the navigation icon
+                             stationDiv.innerHTML = `
+                                 <h3>${stationNameDisplay}</h3>
+                                 <p>距離： ${distanceText}</p>
+                                 <p>地區： ${stationArea}</p>
+                                 <p>地址:：${stationAddress}</p>
+                                 <p>YouBike 2.0 可借： ${youbike2}</p>
+                                 <p>YouBike 2.0E 可借： ${youbike2e}</p>
+                                 <p>可停空位數： ${availableSpaces}</p>
+                                 <a href="https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}&travelmode=driving" target="_blank" class="navigation-icon" title="導航至此">
+                                     🗺️
+                                 </a>
+                             `;
+                             resultsDiv.appendChild(stationDiv);
+                         });
+                     }
+                      // Re-enable the button
+                     geoButton.disabled = false;
+                     geoButton.textContent = '尋找最近站點';
+                 },
+                 (error) => {
+                     let errorMessage = '無法獲取您的位置：';
+                     switch(error.code) {
+                         case error.PERMISSION_DENIED:
+                             errorMessage += '您已拒絕位置分享請求。';
+                             break;
+                         case error.POSITION_UNAVAILABLE:
+                             errorMessage += '位置資訊無法取得。';
+                             break;
+                         case error.TIMEOUT:
+                             errorMessage += '獲取位置請求逾時。';
+                             break;
+                         case error.UNKNOWN_ERROR:
+                             errorMessage += '發生未知錯誤。';
+                             break;
+                     }
+                     resultsDiv.innerHTML = `<p style="text-align: center; width: 100%;">錯誤: ${errorMessage}</p>`;
+
+                     // Re-enable the button
+                     geoButton.disabled = false;
+                     geoButton.textContent = '尋找最近站點';
+                 },
+                 {
+                     enableHighAccuracy: true, // Request high accuracy
+                     timeout: 10000, // Timeout after 10 seconds
+                     maximumAge: 0 // Don't use cached position
+                 }
+             );
+         }
+
+
+        // Fetch all YouBike station data on page load
+        async function fetchAllStations() {
+             const url = "https://api.kcg.gov.tw/api/service/Get/b4dd9c40-9027-4125-8666-06bef1756092";
+            try {
+                const response = await fetch(url, {
+                    headers: { "User-Agent": "Mozilla/5.0" }
+                });
+                const data = await response.json();
+                 allStations = data?.data?.data?.retVal || [];
+                 console.log(`Workspaceed ${allStations.length} stations.`); // Debugging line
+                 // Optionally enable geo button if needed after stations load
+                 // geoButton.disabled = false;
+            } catch (error) {
+                console.error("Error fetching all stations:", error);
+                 resultsDiv.innerHTML = `<p style="text-align: center; width: 100%;">無法載入站點資料以提供搜尋或定位建議: ${error.message}</p>`;
+                 geoButton.disabled = true; // Disable geo button if data load fails
+            }
+        }
+
+
+        // Search function
+        async function searchYouBike() {
+            const keyword = keywordInput.value.trim();
+            // hideSuggestions(); // Hide suggestions when search is initiated (handled by blur or click on suggestion)
+
+             if (!keyword) {
+                 resultsDiv.innerHTML = `<p style="text-align: center; width: 100%;">請輸入站點名稱進行搜尋。</p>`;
+                 return;
+             }
+
+            // Save the valid search keyword to history
+            saveHistory(keyword);
+
+
+             if (allStations.length === 0) {
+                 resultsDiv.innerHTML = `<p style="text-align: center; width: 100%;">站點資料尚未載入，請稍後再試。</p>`;
+                 return;
+             }
+
+            // Filter based on the full station name (sna)
+            const results = allStations.filter(station =>
+                station.sna && station.sna.toLowerCase().includes(keyword.toLowerCase())
+            );
+
+
+            resultsDiv.innerHTML = ""; // Clear previous results
+
+             if (!results.length) {
+                 resultsDiv.innerHTML = `<p style="text-align: center; width: 100%;">找不到與站點名稱 '${keyword}' 相關的站點。</p>`;
+                 return;
+             }
+
+
+            results.forEach(station => {
+                const stationDiv = document.createElement('div');
+                stationDiv.className = 'station';
+
+                 // For the final display, we can still optionally remove the YouBike prefix
+                 const stationNameDisplay = station.sna ? station.sna.replace(/^YouBike2\.0_/, '').replace(/^YouBike1\.0_/, '') : '未知站點名稱'; // More specific prefix removal
+
+                const stationArea = station.sarea || '未知區域';
+                const stationAddress = station.ar || '未知地址';
+                const youbike2 = station.sbi_detail?.yb2 !== undefined ? station.sbi_detail.yb2 : '未知';
+                const youbike2e = station.sbi_detail?.eyb !== undefined ? station.sbi_detail.eyb : '未知';
+                const availableSpaces = station.bemp !== undefined ? station.bemp : '未知';
+
+
+                 // Modified innerHTML to include the navigation icon
+                stationDiv.innerHTML = `
+                    <h3>${stationNameDisplay}</h3>
+                    <p>地區： ${stationArea}</p>
+                    <p>地址:：${stationAddress}</p>
+                    <p>YouBike 2.0 可借： ${youbike2}</p>
+                    <p>YouBike 2.0E 可借： ${youbike2e}</p>
+                    <p>可停空位數： ${availableSpaces}</p>
+                     <a href="https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}&travelmode=driving" target="_blank" class="navigation-icon" title="導航至此">
+                         🗺️
+                     </a>
+                `;
+                resultsDiv.appendChild(stationDiv);
+            });
+        }
+
+
+        // Event Listeners for input field
+        keywordInput.addEventListener('focus', () => {
+            // Show history when input is focused and empty
+            if (keywordInput.value.trim() === '') {
+                displayHistory();
+            }
+        });
+
+        keywordInput.addEventListener('input', () => {
+            const keyword = keywordInput.value.trim();
+             if (keyword === '') {
+                 // If input is cleared, show history again if on desktop, hide suggestions on mobile
+                 if (!isMobileView()) { // Only show history on empty input for desktop
+                     displayHistory();
+                 } else { // Hide suggestions on mobile when input is empty
+                     hideSuggestions();
+                 }
+             } else {
+                 // Show suggestions based on current input
+                 const filteredStations = allStations.filter(station =>
+                     station.sna && station.sna.toLowerCase().includes(keyword.toLowerCase())
+                 ).slice(0, historyLimit); // Limit suggestions to historyLimit
+                 displaySuggestions(filteredStations);
+             }
+        });
+
+        // Hide suggestions when input loses focus (with a slight delay)
+        keywordInput.addEventListener('blur', hideSuggestions);
+
+         // Add keypress listener to the input field to trigger search on Enter key
+         keywordInput.addEventListener('keypress', (event) => {
+             if (event.key === 'Enter') {
+                 event.preventDefault(); // Prevent default form submission if applicable
+                 searchYouBike();
+             }
+         });
+
+
+        // Initial load: fetch stations and set mode toggle button UI
+        window.addEventListener('load', () => {
+            fetchAllStations();
+            // Load dark mode preference from localStorage
+            const savedDarkMode = localStorage.getItem('darkMode');
+            if (savedDarkMode === 'true') {
+                document.body.classList.add('dark-mode');
+            }
+            updateModeToggleButtonUI(); // Set initial button UI based on mode
+        });
+
+         // Update suggestions container position on window resize
+         window.addEventListener('resize', () => {
+             if (suggestionsContainer.style.display === 'block') {
+                 displaySuggestions(
+                      allStations.filter(station =>
+                          station.sna && station.sna.toLowerCase().includes(keywordInput.value.trim().toLowerCase())
+                      ).slice(0, historyLimit) // Re-filter based on current input
+                 ); // Re-display to adjust position/width
+             }
+         });
+
+    </script>
+</body>
+</html>
