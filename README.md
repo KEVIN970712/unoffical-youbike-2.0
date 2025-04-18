@@ -30,7 +30,7 @@
 
 **使用方式**
 
-1.  開啟瀏覽器並前往 [專案網站](https://kevin970712.github.io/unoffical-youbike-2.0/)。
+1.  開啟瀏覽器並前往 [專案網站](https://kevin970712.github.io/unoffical-youbike-2.0/index)。
 2.  在搜尋欄輸入站點名稱或選擇行政區。
 3.  點擊「搜尋」按鈕。
 4.  瀏覽搜尋結果。
