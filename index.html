@@ -47,6 +47,37 @@
             transform: scale(1.05); /* Slightly enlarge on hover */
         }
 
+        /* GitHub Icon Link Style */
+        .github-icon-link {
+            position: fixed; /* Fixed position */
+            bottom: 80px; /* Position above mode toggle (20px + 50px + 10px spacing) */
+            right: 20px; /* Align with mode toggle */
+            width: 50px; /* Same width as mode toggle */
+            height: 50px; /* Same height as mode toggle */
+            border-radius: 50%; /* Make it circular */
+            background-color: #333; /* GitHub brand color or a neutral color */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            z-index: 100; /* Ensure it's on top */
+            text-decoration: none; /* Remove underline */
+        }
+
+        .github-icon-link:hover {
+             background-color: #555; /* Darker shade on hover */
+             transform: scale(1.05);
+             box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .github-icon-link img {
+            width: 60%; /* Adjust image size relative to container */
+            height: 60%; /* Adjust image size relative to container */
+            filter: invert(1) brightness(1.5); /* Make icon white for dark background, potentially brighter */
+            transition: filter 0.3s ease;
+        }
+
 
          /* Search and Geolocation Button Container */
         #inputArea {
@@ -333,6 +364,20 @@
               color: #64b5f6;
           }
 
+        /* Dark mode GitHub icon link style */
+        .dark-mode .github-icon-link {
+             background-color: #555; /* Adjust background for dark mode */
+             box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        .dark-mode .github-icon-link:hover {
+             background-color: #777; /* Darker on hover in dark mode */
+             box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+        }
+
+        .dark-mode .github-icon-link img {
+            filter: none; /* White icon is fine on dark background */
+        }
+
 
         /* Mobile Specific Adjustments */
         @media (max-width: 768px) {
@@ -356,10 +401,21 @@
                  min-width: auto;
              }
 
-            /* Padding for body on mobile to account for fixed button */
+            /* Padding for body on mobile to account for fixed buttons */
             body {
-                padding-bottom: 80px; /* Add padding to the bottom to prevent content hiding behind the fixed button */
+                padding-bottom: 140px; /* Add more padding for two fixed buttons */
             }
+
+            /* Adjust fixed button positions for mobile */
+            .github-icon-link {
+                 bottom: 80px; /* Keep consistent positioning relative to mode toggle */
+                 right: 10px; /* Adjust right margin for mobile */
+            }
+             #modeToggle {
+                  bottom: 20px; /* Keep bottom margin */
+                 right: 10px; /* Adjust right margin for mobile */
+             }
+
 
              #suggestionsContainer {
                  position: static; /* Remove absolute positioning on smaller screens */
@@ -386,12 +442,16 @@
         }
          @media (max-width: 480px) {
              /* Adjust button position slightly on very small screens */
+             .github-icon-link {
+                  bottom: 70px; /* Adjust for smaller mode toggle margin */
+                  right: 10px;
+             }
              #modeToggle {
                   bottom: 10px;
                  right: 10px;
              }
              body {
-                 padding-bottom: 70px; /* Adjust padding for smaller button/margin */
+                 padding-bottom: 130px; /* Adjust padding */
              }
              .station {
                  width: calc(100% - 40px); /* Adjusted for padding */
@@ -409,6 +469,11 @@
     </style>
 </head>
 <body>
+    <!-- GitHub Project Link -->
+    <a href="https://github.com/KEVIN970712/unoffical-youbike-2.0" target="_blank" class="github-icon-link" title="GitHub 專案連結">
+         <img src="https://cdn.simpleicons.org/github/000000" alt="GitHub Icon">
+    </a>
+
     <button id="modeToggle" onclick="toggleDarkMode()"></button>
     <h1>YouBike 站點查詢</h1>
     <div id="inputArea">
@@ -662,7 +727,7 @@
                                  <p>YouBike 2.0 可借： ${youbike2}</p>
                                  <p>YouBike 2.0E 可借： ${youbike2e}</p>
                                  <p>可停空位數： ${availableSpaces}</p>
-                                 <a href="https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}&travelmode=driving" target="_blank" class="navigation-icon" title="導航至此">
+                                 <a href="maps.google.com4{station.lat},${station.lng}&travelmode=driving" target="_blank" class="navigation-icon" title="導航至此">
                                      🗺️
                                  </a>
                              `;
@@ -779,7 +844,7 @@
                     <p>YouBike 2.0 可借： ${youbike2}</p>
                     <p>YouBike 2.0E 可借： ${youbike2e}</p>
                     <p>可停空位數： ${availableSpaces}</p>
-                     <a href="https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}&travelmode=driving" target="_blank" class="navigation-icon" title="導航至此">
+                     <a href="maps.google.com4{station.lat},${station.lng}&travelmode=driving" target="_blank" class="navigation-icon" title="導航至此">
                          🗺️
                      </a>
                 `;
