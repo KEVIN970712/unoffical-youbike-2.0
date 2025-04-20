@@ -1,0 +1,101 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Ubike 查詢</title>
+  </head>
+  <body>
+    <h1>Ubike 查詢</h1>
+    <input type="text" id="query" placeholder="請輸入搜尋關鍵字">
+    <button id="searchBtn">搜尋</button>
+    <pre id="output"></pre>
+    <script>
+      // 取得 Youbike 資料
+      async function fetchYoubikeData() {
+        try {
+          const response = await fetch("https://api.kcg.gov.tw/api/service/Get/b4dd9c40-9027-4125-8666-06bef1756092");
+          const data = await response.json();
+          // 先提取外層 data，再提取內層 data，最後提取 retVal
+          const dataContent = (data.data && data.data.data) || {};
+          return dataContent.retVal || [];
+        } catch (e) {
+          console.error(e);
+          return [];
+        }
+      }
+
+      // 搜尋站點
+      function searchSite(query, data) {
+        const validData = data.filter(site => typeof site === 'object');
+        const exact = validData.filter(site => site.sno === query);
+        if (exact.length > 0) {
+          return exact;
+        }
+        return validData.filter(site => (site.sna && site.sna.includes(query)) || (site.ar && site.ar.includes(query)));
+      }
+
+      // 提取站點資訊
+      function extractStationInfo(site) {
+        return {
+          id: site.sno,
+          name: site.sna,
+          coords: [site.lat, site.lng],
+          district: site.sarea,
+          address: site.ar
+        };
+      }
+
+      // 查詢車輛資料
+      async function queryVehicleData(stationIds) {
+        const headers = {
+          'Accept': '*/*',
+          'Content-Type': 'application/json',
+          'Origin': 'https://www.youbike.com.tw',
+          'Referer': 'https://www.youbike.com.tw/'
+        };
+        const body = JSON.stringify({ station_no: stationIds });
+        try {
+          const response = await fetch('https://apis.youbike.com.tw/tw2/parkingInfo', {
+            method: 'POST',
+            headers,
+            body
+          });
+          const result = await response.json();
+          let retVal = result.retVal || {};
+          let dataArray = Array.isArray(retVal) ? retVal : (retVal.data || []);
+          dataArray = dataArray.filter(item => typeof item === 'object');
+          const vehicleData = {};
+          dataArray.forEach(item => { vehicleData[item.station_no] = item; });
+          return vehicleData;
+        } catch (e) {
+          console.error(e);
+          return {};
+        }
+      }
+
+      // 按下搜尋按鈕後執行查詢
+      document.getElementById('searchBtn').addEventListener('click', async () => {
+        const query = document.getElementById('query').value.trim();
+        const outputEl = document.getElementById('output');
+        if (!query) {
+          outputEl.textContent = "請輸入搜尋關鍵字";
+          return;
+        }
+        const data = await fetchYoubikeData();
+        const results = searchSite(query, data);
+        if (results.length > 0) {
+          const stationIds = results.map(site => extractStationInfo(site).id);
+          const vehData = await queryVehicleData(stationIds);
+          const organizedOutput = results.map(site => {
+            const info = extractStationInfo(site);
+            const vehicle = vehData[info.id] || {};
+            return { station_info: info, vehicle_info: vehicle };
+          });
+          organizedOutput.sort((a, b) => a.station_info.id.localeCompare(b.station_info.id));
+          outputEl.textContent = JSON.stringify(organizedOutput, null, 4);
+        } else {
+          outputEl.textContent = "查無相關站點";
+        }
+      });
+    </script>
+  </body>
+</html>
