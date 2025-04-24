@@ -109,6 +109,7 @@
         font-size: 1.2em;
         word-wrap: break-word;
         overflow-wrap: break-word;
+         /* Added padding-right to prevent overlap with pin icon */
         padding-right: 30px;
       }
       .station p {
@@ -282,30 +283,58 @@
       body.dark-mode #toggleDarkMode:hover {
         background: linear-gradient(135deg, #64b5f6, #42a5f5);
       }
+      /* Modified media query for narrow screens */
       @media (max-width: 768px) {
         .station {
           width: calc(50% - 20px);
         }
+        /* Removed: width: 100%; margin-bottom: 10px; border-radius: 5px 5px 0 0; display: block; */
         #keyword {
-          width: 100%;
-          margin-right: 0;
-          margin-bottom: 10px;
-          border-radius: 5px 5px 0 0;
-          display: block;
+            margin-right: 0;
+            padding: 10px; /* Adjusted padding */
+            border: 1px solid #ccc; /* Keeping border */
+            box-sizing: border-box; /* Keeping box-sizing */
+            /* Inherit width from base style */
+            width: calc(100% - 120px);
+            max-width: 400px;
         }
-        button {
-          width: 100%;
-          border-radius: 0 0 5px 5px;
-          display: block;
+         /* Modified search button style for narrow screens */
+        #searchContainer button {
+            /* Removed: width: 100%; border-radius: 0 0 5px 5px; display: block; */
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            margin-left: 0;
+            /* Inherit width from base style */
+            width: auto;
+            min-width: 50px;
+            text-align: center;
+            padding: 10px 20px; /* Keeping padding from base style */
+            border: none; /* Assuming no border in base style */
+            box-sizing: border-box; /* Keeping box-sizing */
         }
+        /* Removed flex-direction column from search container */
         #searchContainer {
-          flex-direction: column;
+            /* Removed: flex-direction: column; */
+            padding: 0 10px; /* Keeping padding */
+            max-width: 500px;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            /* Ensure flex display */
+            display: flex;
+            align-items: center;
         }
         #results {
           gap: 10px;
         }
         .station {
           margin-bottom: 10px;
+        }
+         /* Keeping h3 padding-right for icon spacing */
+        .station h3 {
+          padding-right: 30px;
         }
       }
       @media (max-width: 480px) {
@@ -337,6 +366,7 @@
         color: #007BFF;
         text-align: center;
       }
+      /* 新增滑動開關樣式 */
       .switch {
         position: relative;
         display: inline-block;
@@ -376,6 +406,7 @@
       input:checked + .slider:before {
         transform: translateX(26px);
       }
+      /* 修正 PWA 圖片變形問題 */
       #githubButton img,
       #installButton img {
         object-fit: contain;
@@ -391,7 +422,7 @@
     <div id="mainContent" style="display:none;">
       <h1>高雄 YouBike 搜尋</h1>
       <div id="searchContainer">
-        <input type="text" id="keyword" placeholder="請輸入站點名稱、地址" value="" />
+        <input type="text" id="keyword" placeholder="請輸入站點名稱、區域或地址" value="" />
         <button id="searchButton">搜尋</button>
       </div>
       <div id="locationSwitchContainer" style="text-align: center; margin: 10px 0;">
@@ -410,17 +441,17 @@
       </div>
       <a href="https://github.com/potatosserver/YouBike" target="_blank" title="GitHub Repository">
         <button id="githubButton" style="position: fixed; bottom: 80px; right: 20px; z-index: 1000; width: 50px; height: 50px; background: white; color: black; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-          <img src="https://potatosserver.github.io//YouBike/icons/github.png" alt="GitHub" style="width:35px; height:35px;" />
+          <img src="/YouBike/icons/github.png" alt="GitHub" style="width:35px; height:35px;" />
         </button>
       </a>
       <button id="installButton" style="position: fixed; bottom: 140px; right: 20px; z-index: 1000; width: 50px; height: 50px; background: white; color: black; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-        <img src="https://potatosserver.github.io//YouBike/icons/install.png" alt="安裝" style="width:35px; height:35px; display:block; margin:0 auto;" />
+        <img src="/YouBike/icons/install.png" alt="安裝" style="width:35px; height:35px;" />
       </button>
       <button id="toggleDarkMode" title="切換暗色模式">🌙</button>
     </div>
     <script>
       let userLocation = null;
-      let sortingLocked = false;
+      let sortingLocked = false; // 新增：排序鎖定旗標
       let initialLoad = true;
       let locationDenied = false;
       let geolocationErrorMessage = null;
@@ -439,14 +470,16 @@
       const defaultSearchArea = "";
 
       const pinnedStations = new Set(JSON.parse(localStorage.getItem('pinnedStations') || '[]'));
+      // 讀取並設定使用定位的狀態，預設為 true
       const useLocationSetting = localStorage.getItem("useLocation");
       const useLocation = useLocationSetting === null ? true : useLocationSetting === "true";
       document.getElementById('toggleUseLocation').checked = useLocation;
 
+      // 修改定位開關事件處理器：若開啟則立即鎖定排序再呼叫 getLocation()
       document.getElementById('toggleUseLocation').addEventListener('change', function () {
         localStorage.setItem("useLocation", this.checked);
         if (this.checked) {
-          sortingLocked = true;
+          sortingLocked = true; // 立即鎖定排序
           getLocation();
         } else {
           userLocation = { latitude: defaultLatitude, longitude: defaultLongitude };
@@ -530,8 +563,9 @@
           if (keyword) {
             kcgResults = kcgResults.filter(station => {
               const stationName = station.sna ? station.sna.toLowerCase() : '';
+              const stationArea = station.sarea ? station.sarea.toLowerCase() : '';
               const stationAddress = station.ar ? station.ar.toLowerCase() : '';
-              return stationName.includes(keyword) || stationAddress.includes(keyword);
+              return stationArea.includes(keyword) || stationName.includes(keyword) || stationAddress.includes(keyword);
             });
           }
           kcgResults = kcgResults.sort((a, b) => {
@@ -550,6 +584,7 @@
           let limit = keyword ? 50 : 20;
           let usedStations;
           if (!keyword) {
+            // 首頁狀態：顯示釘選車站在前，其次依定位排序其他車站
             const pinnedFromLocal = kcgResults.filter(station => pinnedStations.has(String(station.sno)));
             const unpinned = kcgResults.filter(station => !pinnedStations.has(String(station.sno)));
             pinnedFromLocal.sort((a, b) => {
@@ -581,6 +616,7 @@
             usedStations = [...pinnedFromLocal, ...unpinned].slice(0, limit);
           } else {
             usedStations = kcgResults.slice(0, limit);
+            // 當有關鍵字時維持原本邏輯：先釘選再非釘選排序
             const pinnedList = usedStations.filter(station => pinnedStations.has(String(station.sno)));
             const nonPinnedList = usedStations.filter(station => !pinnedStations.has(String(station.sno)));
             pinnedList.sort((a, b) => {
@@ -641,6 +677,7 @@
                         ${pinButton}
                         <h3>${station.name || '未知站點'}</h3>
                         <p class="distance">距離: ${distance.toFixed(2)} 公里</p>
+                        <p>地區: ${station.district || '未知區域'}</p>
                         <p>地址: ${station.address || '未知地址'}</p>
                         <p>YouBike 2.0: <span class="vehicle_yb2">${vehicle?.available_2_0 !== undefined ? vehicle.available_2_0 : '未知'}</span></p>
                         <p>YouBike 2.0E: <span class="vehicle_ybe">${vehicle?.available_e !== undefined ? vehicle.available_e : '未知'}</span></p>
@@ -716,6 +753,7 @@
         return allVehicleData;
       }
 
+      // 修改 updateResultsOrder：若排序被鎖定則不進行重新排序
       function updateResultsOrder() {
         if (sortingLocked) return;
         const cards = Array.from(document.querySelectorAll(".station"));
@@ -773,18 +811,15 @@
         return R * c;
       }
 
+      // 修改 handleGeolocationSuccess：資料請求完成後解除鎖定並進行排序
       async function handleGeolocationSuccess(position) {
-        const wasDefault = !userLocation || (userLocation.latitude === defaultLatitude && userLocation.longitude === defaultLongitude);
         userLocation = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
         };
-        if (wasDefault) {
-          await searchYouBike();
-          updateResultsOrder();
-        } else {
-          updateCardDistances();
-        }
+        await searchYouBike();
+        sortingLocked = false; // 解鎖排序
+        updateResultsOrder();
       }
 
       function handleGeolocationError(error) {
@@ -796,13 +831,13 @@
             errorMessage = "未提供定位權限，將使用捷運美麗島站作為中心定位。";
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = "定位資訊不可用，將使用捷運美麗島站作為中心定位直到定位成功。";
+            errorMessage = "定位資訊不可用，將使用捷運美麗島站作為中心定位。";
             break;
           case error.TIMEOUT:
-            errorMessage = "定位逾時，將使用捷運美麗島站作為中心定位直到定位成功。";
+            errorMessage = "定位逾時，將使用捷運美麗島站作為中心定位。";
             break;
           default:
-            errorMessage = "定位錯誤，將使用捷運美麗島站作為中心定位直到定位成功。";
+            errorMessage = "定位錯誤，將使用捷運美麗島站作為中心定位。";
             break;
         }
         showModal(errorMessage);
@@ -811,65 +846,35 @@
       }
 
       function handleGeoUpdateSuccess(position) {
-        const wasDefault = userLocation && userLocation.latitude === defaultLatitude && userLocation.longitude === defaultLongitude;
         userLocation = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
         };
-        if (wasDefault) {
-          searchYouBike().then(() => {
-            updateResultsOrder();
-          });
-        } else {
-          updateCardDistances();
-        }
+        updateCardDistances();
       }
-
       function handleGeoUpdateError(error) {
         console.error("Geolocation update error:", error);
       }
 
       function getLocation() {
+        // 檢查定位開關是否開啟，若未開啟則直接返回
         if (!document.getElementById('toggleUseLocation').checked) {
           return;
         }
         if (navigator.geolocation) {
-          let timeoutTriggered = false;
-          const geoTimeout = setTimeout(() => {
-            timeoutTriggered = true;
-            handleGeolocationError({ code: 3, message: "首次定位超時" });
-          }, 10000);
-          
-          navigator.geolocation.getCurrentPosition(
-            function (position) {
-              if (!timeoutTriggered) {
-                clearTimeout(geoTimeout);
-                handleGeolocationSuccess(position);
-              }
-            },
-            function (error) {
-              if (!timeoutTriggered) {
-                clearTimeout(geoTimeout);
-                handleGeolocationError(error);
-              }
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 10000,
-              maximumAge: 0
-            }
-          );
+          navigator.geolocation.getCurrentPosition(handleGeolocationSuccess, handleGeolocationError, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
           setInterval(() => {
+            // 每次發送前再檢查開關狀態
             if (document.getElementById('toggleUseLocation').checked) {
-              navigator.geolocation.getCurrentPosition(
-                handleGeoUpdateSuccess,
-                handleGeoUpdateError,
-                {
-                  enableHighAccuracy: true,
-                  timeout: 10000,
-                  maximumAge: 0
-                }
-              );
+              navigator.geolocation.getCurrentPosition(handleGeoUpdateSuccess, handleGeoUpdateError, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+              });
             }
           }, 10000);
         } else {
@@ -895,6 +900,7 @@
             distanceEl.textContent = "距離: " + newDistance.toFixed(2) + " 公里";
           }
         });
+        // 更新排序
         updateResultsOrder();
       }
 
@@ -949,8 +955,10 @@
         }
       });
       setInterval(updateVehicleData, 60000);
+      // 新增：每10秒依定位更新排序與卡片距離
       setInterval(updateCardDistances, 10000);
 
+      // 新增安裝事件
       let deferredPrompt;
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -965,25 +973,7 @@
           console.log('User response to the install prompt:', outcome);
           deferredPrompt = null;
           document.getElementById('installButton').style.display = 'none';
-        } else {
-          if (window.matchMedia('(display-mode: standalone)').matches) {
-            console.log('App 已在獨立模式運行');
-          } else {
-            alert('無法自動開啟 App，請從主畫面啟動');
-          }
         }
-      });
-
-      window.addEventListener('appinstalled', () => {
-        console.log('App 已安裝');
-        deferredPrompt = null;
-        const installBtn = document.getElementById('installButton');
-        installBtn.innerHTML = '<img src="https://potatosserver.github.io/YouBike/icons/open.png" alt="開啟" style="width:35px; height:35px;" />';
-      });
-
-      document.querySelector('h1').addEventListener('click', function() {
-        keywordInput.value = '';
-        searchYouBike();
       });
     </script>
   </body>
